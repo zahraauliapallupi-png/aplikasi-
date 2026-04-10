@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>X – Twitter Clone</title>
+<link href="https://fonts.googleapis.com/css2?family=Chirp:wght@400;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#000;--surface:#0f0f0f;--border:#2f3336;
+  --text:#e7e9ea;--muted:#71767b;--blue:#1d9bf0;
+  --blue-hover:#1a8cd8;--red:#f4212e;--green:#00ba7c;
+  --yellow:#ffd400;--like:#f91880;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:'Inter',sans-serif;overflow:hidden;}
+#app{max-width:430px;margin:0 auto;height:100vh;
+  display:flex;flex-direction:column;position:relative;overflow:hidden;}
+
+/* ── STATUSBAR ── */
+.statusbar{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 18px 4px;font-size:12px;font-weight:600;color:var(--text);flex-shrink:0;}
+.sb-right{display:flex;gap:5px;align-items:center;}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;
+  padding:6px 16px 0;flex-shrink:0;position:relative;min-height:48px;}
+.topbar .logo{font-size:26px;font-weight:900;color:var(--text);}
+.topbar .upgrade{font-size:13px;font-weight:700;color:var(--text);
+  background:none;border:none;cursor:pointer;}
+.topbar .dots-btn{background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;}
+.avatar-sm{width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,#1d9bf0,#8b5cf6);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;}
+
+/* ── TAB BAR (for/following) ── */
+.tab-row{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.tab-btn{flex:1;padding:14px 0;text-align:center;font-size:15px;font-weight:600;
+  color:var(--muted);background:none;border:none;cursor:pointer;
+  position:relative;transition:.15s;}
+.tab-btn.active{color:var(--text);}
+.tab-btn.active::after{content:'';position:absolute;bottom:-1px;left:30%;right:30%;
+  height:3px;background:var(--blue);border-radius:2px;}
+
+/* ── PAGES ── */
+.pages{flex:1;overflow:hidden;position:relative;}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  opacity:0;pointer-events:none;transform:translateY(6px);transition:.2s ease;}
+.page.active{opacity:1;pointer-events:all;transform:translateY(0);}
+.page::-webkit-scrollbar{width:2px;}
+.page::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* ── BOTTOM NAV ── */
+.bottomnav{display:flex;background:var(--bg);border-top:1px solid var(--border);
+  flex-shrink:0;padding:4px 0 calc(4px + env(safe-area-inset-bottom,0px));}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;background:none;border:none;color:var(--muted);cursor:pointer;
+  padding:8px 0;position:relative;transition:.15s;}
+.nav-item.active{color:var(--text);}
+.nav-item .nicon{font-size:24px;}
+.nav-notif{position:absolute;top:6px;right:calc(50% - 18px);
+  background:var(--blue);color:#fff;font-size:9px;font-weight:700;
+  border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;}
+
+/* ── TWEET CARD ── */
+.tweet{display:flex;gap:12px;padding:12px 16px;
+  border-bottom:1px solid var(--border);cursor:pointer;transition:.1s;}
+.tweet:hover{background:rgba(255,255,255,.02);}
+.tweet-ava{width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:700;color:#fff;}
+.tweet-body{flex:1;min-width:0;}
+.tweet-header{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:4px;}
+.tweet-name{font-weight:700;font-size:15px;}
+.tweet-verified{color:var(--blue);font-size:14px;}
+.tweet-handle{color:var(--muted);font-size:14px;}
+.tweet-dot{color:var(--muted);font-size:14px;}
+.tweet-time{color:var(--muted);font-size:14px;}
+.tweet-more{margin-left:auto;background:none;border:none;color:var(--muted);
+  font-size:18px;cursor:pointer;padding:0 4px;}
+.tweet-text{font-size:15px;line-height:1.5;margin-bottom:10px;word-break:break-word;}
+.tweet-text .hashtag{color:var(--blue);}
+.tweet-text .mention{color:var(--blue);}
+.tweet-media{border-radius:14px;overflow:hidden;margin-bottom:10px;
+  background:#111;width:100%;aspect-ratio:16/10;
+  display:flex;align-items:center;justify-content:center;position:relative;}
+.tweet-media .play-btn{
+  width:50px;height:50px;border-radius:50%;
+  background:rgba(29,155,240,.9);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;z-index:2;}
+.tweet-actions{display:flex;align-items:center;justify-content:space-between;max-width:320px;}
+.tact{display:flex;align-items:center;gap:6px;background:none;border:none;
+  color:var(--muted);font-size:13px;cursor:pointer;padding:4px 8px 4px 0;
+  border-radius:30px;transition:.15s;font-family:'Inter',sans-serif;}
+.tact:hover.reply{color:var(--blue);background:rgba(29,155,240,.1);}
+.tact:hover.retweet{color:var(--green);background:rgba(0,186,124,.1);}
+.tact:hover.like{color:var(--like);background:rgba(249,24,128,.1);}
+.tact:hover.views{color:var(--blue);background:rgba(29,155,240,.1);}
+.tact.liked{color:var(--like);}
+.tact.retweeted{color:var(--green);}
+.tact-icon{font-size:18px;}
+
+/* ── COMPOSE BTN ── */
+.fab{position:absolute;bottom:80px;right:16px;
+  width:56px;height:56px;border-radius:50%;
+  background:var(--blue);border:none;color:#fff;
+  font-size:26px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 20px rgba(29,155,240,.4);
+  display:flex;align-items:center;justify-content:center;
+  transition:.2s;z-index:10;}
+.fab:hover{background:var(--blue-hover);transform:scale(1.05);}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;
+  opacity:0;pointer-events:none;transition:.2s;
+  display:flex;align-items:flex-end;justify-content:center;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal-sheet{background:#16181c;border-radius:20px 20px 0 0;
+  width:100%;max-width:430px;
+  transform:translateY(100%);transition:.3s cubic-bezier(.34,1.1,.64,1);
+  max-height:92vh;overflow-y:auto;position:relative;}
+.modal-overlay.open .modal-sheet{transform:translateY(0);}
+.modal-handle{width:36px;height:4px;background:var(--border);
+  border-radius:2px;margin:12px auto 16px;}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;
+  color:var(--muted);font-size:22px;cursor:pointer;}
+.modal-body{padding:0 20px 32px;}
+.modal-title{font-size:19px;font-weight:800;margin-bottom:18px;}
+
+/* ── SEARCH PAGE ── */
+.search-wrap{padding:12px 16px;}
+.search-input-row{display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:30px;padding:10px 16px;margin-bottom:16px;transition:.2s;}
+.search-input-row:focus-within{border-color:var(--blue);}
+.search-input-row input{flex:1;background:none;border:none;color:var(--text);
+  font-size:16px;outline:none;font-family:'Inter',sans-serif;}
+.search-input-row input::placeholder{color:var(--muted);}
+.trend-card{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:.1s;}
+.trend-card:hover{background:rgba(255,255,255,.03);}
+.trend-cat{font-size:12px;color:var(--muted);}
+.trend-name{font-size:16px;font-weight:700;margin:2px 0;}
+.trend-count{font-size:12px;color:var(--muted);}
+.who-card{display:flex;align-items:center;gap:12px;padding:12px 16px;
+  border-bottom:1px solid var(--border);}
+.who-info{flex:1;}
+.who-name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:4px;}
+.who-handle{font-size:13px;color:var(--muted);}
+.who-bio{font-size:13px;color:var(--muted);margin-top:2px;}
+.btn-follow{background:var(--text);color:#000;border:none;border-radius:30px;
+  padding:7px 18px;font-weight:700;font-size:13px;cursor:pointer;transition:.15s;
+  font-family:'Inter',sans-serif;}
+.btn-follow:hover{background:#ccc;}
+.btn-following{background:transparent;color:var(--text);border:1px solid var(--border);
+  border-radius:30px;padding:7px 18px;font-weight:700;font-size:13px;
+  cursor:pointer;font-family:'Inter',sans-serif;}
+
+/* ── NOTIF PAGE ── */
+.notif-tabs{display:flex;border-bottom:1px solid var(--border);}
+.notif-tab{flex:1;padding:14px 0;text-align:center;font-size:14px;font-weight:600;
+  color:var(--muted);background:none;border:none;cursor:pointer;position:relative;}
+.notif-tab.active{color:var(--text);}
+.notif-tab.active::after{content:'';position:absolute;bottom:-1px;left:20%;right:20%;
+  height:3px;background:var(--blue);border-radius:2px;}
+.notif-item{display:flex;gap:12px;padding:12px 16px;
+  border-bottom:1px solid var(--border);cursor:pointer;transition:.1s;}
+.notif-item:hover{background:rgba(255,255,255,.02);}
+.notif-icon{font-size:22px;width:36px;text-align:center;flex-shrink:0;}
+.notif-text{font-size:14px;line-height:1.5;}
+.notif-text b{font-weight:700;}
+.notif-time{font-size:12px;color:var(--muted);margin-top:2px;}
+.notif-unread{background:rgba(29,155,240,.07);}
+
+/* ── CHAT PAGE ── */
+.chat-list-item{display:flex;gap:12px;padding:14px 16px;
+  border-bottom:1px solid var(--border);cursor:pointer;transition:.1s;}
+.chat-list-item:hover{background:rgba(255,255,255,.02);}
+.chat-meta{flex:1;min-width:0;}
+.chat-name-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.chat-name{font-weight:700;font-size:15px;}
+.chat-time{font-size:12px;color:var(--muted);}
+.chat-preview{font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chat-unread-dot{width:9px;height:9px;border-radius:50%;background:var(--blue);flex-shrink:0;align-self:center;}
+/* chat window */
+.chat-window{position:absolute;inset:0;background:var(--bg);
+  transform:translateX(100%);transition:.25s;z-index:50;display:flex;flex-direction:column;}
+.chat-window.open{transform:translateX(0);}
+.chat-topbar{display:flex;align-items:center;gap:12px;padding:12px 16px;
+  border-bottom:1px solid var(--border);flex-shrink:0;}
+.chat-back{background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;}
+.bubble{max-width:75%;padding:10px 14px;border-radius:18px;font-size:14px;line-height:1.5;word-break:break-word;}
+.bubble.mine{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:4px;}
+.bubble.theirs{align-self:flex-start;background:var(--surface);color:var(--text);border-bottom-left-radius:4px;}
+.bubble-time{font-size:10px;color:var(--muted);text-align:right;margin-top:2px;}
+.chat-input-row{display:flex;gap:10px;padding:10px 16px;border-top:1px solid var(--border);flex-shrink:0;}
+.chat-input{flex:1;background:var(--surface);border:1px solid var(--border);
+  border-radius:30px;padding:10px 16px;color:var(--text);font-size:14px;
+  outline:none;font-family:'Inter',sans-serif;}
+.chat-input:focus{border-color:var(--blue);}
+.chat-send{background:var(--blue);border:none;color:#fff;border-radius:50%;
+  width:38px;height:38px;cursor:pointer;font-size:16px;flex-shrink:0;}
+
+/* ── BOOKMARKS ── */
+.page-header{padding:14px 16px;font-size:19px;font-weight:800;
+  border-bottom:1px solid var(--border);}
+
+/* ── PROFILE ── */
+.profile-banner{height:130px;background:linear-gradient(135deg,#1d9bf0 0%,#8b5cf6 100%);
+  flex-shrink:0;position:relative;}
+.profile-ava-wrap{position:absolute;bottom:-40px;left:16px;
+  width:80px;height:80px;border-radius:50%;border:4px solid var(--bg);
+  background:linear-gradient(135deg,#1d9bf0,#8b5cf6);
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;font-weight:700;color:#fff;}
+.profile-actions{display:flex;justify-content:flex-end;padding:14px 16px 0;}
+.btn-edit-profile{background:none;border:1px solid var(--border);color:var(--text);
+  border-radius:30px;padding:8px 18px;font-weight:700;font-size:14px;cursor:pointer;
+  transition:.15s;font-family:'Inter',sans-serif;}
+.btn-edit-profile:hover{background:rgba(255,255,255,.06);}
+.profile-info{padding:48px 16px 14px;}
+.profile-name{font-size:20px;font-weight:800;display:flex;align-items:center;gap:6px;}
+.profile-handle{font-size:14px;color:var(--muted);margin-top:2px;}
+.profile-bio{font-size:15px;margin:10px 0;line-height:1.5;}
+.profile-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:14px;color:var(--muted);margin-bottom:12px;}
+.profile-meta span{display:flex;align-items:center;gap:4px;}
+.profile-stats{display:flex;gap:20px;}
+.profile-stats a{font-size:14px;color:var(--text);text-decoration:none;}
+.profile-stats a b{font-weight:700;}
+.profile-stats a span{color:var(--muted);}
+.profile-tabs{display:flex;border-bottom:1px solid var(--border);}
+.profile-tab{flex:1;padding:14px 0;text-align:center;font-size:14px;font-weight:600;
+  color:var(--muted);background:none;border:none;cursor:pointer;position:relative;}
+.profile-tab.active{color:var(--text);}
+.profile-tab.active::after{content:'';position:absolute;bottom:-1px;left:20%;right:20%;
+  height:3px;background:var(--blue);border-radius:2px;}
+
+/* ── SETTINGS ── */
+.settings-section{padding:16px 16px 4px;font-size:13px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.8px;}
+.settings-item{display:flex;align-items:center;gap:14px;padding:14px 16px;
+  border-bottom:1px solid var(--border);cursor:pointer;transition:.1s;}
+.settings-item:hover{background:rgba(255,255,255,.03);}
+.settings-icon{font-size:22px;width:28px;text-align:center;flex-shrink:0;}
+.settings-text{flex:1;}
+.settings-label{font-size:15px;font-weight:500;}
+.settings-sub{font-size:13px;color:var(--muted);margin-top:2px;}
+.settings-arrow{color:var(--muted);font-size:18px;}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--border);
+  position:relative;cursor:pointer;transition:.2s;flex-shrink:0;}
+.toggle.on{background:var(--blue);}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;
+  border-radius:50%;background:#fff;transition:.2s;}
+.toggle.on::after{left:22px;}
+
+/* ── FOLLOWER REQ ── */
+.req-item{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);}
+.req-btns{display:flex;gap:8px;margin-top:8px;}
+.btn-accept{background:var(--text);color:#000;border:none;border-radius:30px;
+  padding:7px 18px;font-weight:700;font-size:13px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:.15s;}
+.btn-accept:hover{background:#ccc;}
+.btn-decline{background:none;border:1px solid var(--border);color:var(--text);
+  border-radius:30px;padding:7px 18px;font-weight:700;font-size:13px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:.15s;}
+.btn-decline:hover{border-color:var(--red);color:var(--red);}
+
+/* ── COMPOSE MODAL ── */
+.compose-area{display:flex;gap:12px;padding:0 20px 16px;}
+.compose-input{flex:1;background:none;border:none;color:var(--text);
+  font-size:18px;outline:none;resize:none;line-height:1.5;min-height:80px;
+  font-family:'Inter',sans-serif;}
+.compose-toolbar{display:flex;align-items:center;gap:4px;
+  padding:10px 20px;border-top:1px solid var(--border);}
+.compose-tool{background:none;border:none;color:var(--blue);font-size:22px;cursor:pointer;padding:6px;}
+.compose-counter{margin-left:auto;font-size:14px;color:var(--muted);}
+.btn-tweet{background:var(--blue);border:none;color:#fff;border-radius:30px;
+  padding:9px 20px;font-weight:700;font-size:15px;cursor:pointer;
+  font-family:'Inter',sans-serif;transition:.15s;}
+.btn-tweet:hover{background:var(--blue-hover);}
+.btn-tweet:disabled{opacity:.5;cursor:default;}
+.compose-header{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 20px 16px;}
+
+/* ── COMMUNITY ── */
+.comm-card{display:flex;gap:12px;padding:14px 16px;
+  border-bottom:1px solid var(--border);cursor:pointer;transition:.1s;}
+.comm-card:hover{background:rgba(255,255,255,.02);}
+.comm-banner{width:56px;height:56px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:26px;}
+.comm-info{flex:1;}
+.comm-name{font-weight:700;font-size:15px;}
+.comm-meta{font-size:13px;color:var(--muted);margin-top:2px;}
+.btn-join{background:var(--text);color:#000;border:none;border-radius:30px;
+  padding:7px 18px;font-weight:700;font-size:13px;cursor:pointer;
+  font-family:'Inter',sans-serif;align-self:center;flex-shrink:0;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--blue);color:#fff;border-radius:8px;padding:10px 22px;
+  font-size:14px;font-weight:600;z-index:999;opacity:0;transition:.3s;
+  white-space:nowrap;pointer-events:none;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ── DRAWER (left sidebar) ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;
+  opacity:0;pointer-events:none;transition:.2s;}
+.drawer-overlay.open{opacity:1;pointer-events:all;}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:340px;
+  background:var(--bg);z-index:400;transform:translateX(-100%);
+  transition:.25s cubic-bezier(.4,0,.2,1);overflow-y:auto;padding:20px 20px 40px;}
+.drawer.open{transform:translateX(0);}
+.drawer-profile{margin-bottom:20px;}
+.drawer-name{font-size:18px;font-weight:800;margin-top:14px;}
+.drawer-handle{font-size:14px;color:var(--muted);}
+.drawer-stats{display:flex;gap:16px;margin:12px 0 20px;font-size:14px;}
+.drawer-stats a{text-decoration:none;color:var(--text);}
+.drawer-stats a span{color:var(--muted);}
+.drawer-item{display:flex;align-items:center;gap:14px;padding:14px 8px;
+  font-size:18px;font-weight:600;cursor:pointer;border-radius:30px;
+  transition:.15s;color:var(--text);}
+.drawer-item:hover{background:rgba(255,255,255,.07);}
+.drawer-icon{font-size:24px;width:30px;text-align:center;}
+.drawer-divider{border-top:1px solid var(--border);margin:10px 0;}
+.drawer-sub{font-size:14px;color:var(--muted);padding:8px 8px;cursor:pointer;}
+
+/* ── TWEET DETAIL ── */
+.tweet-detail-overlay{position:absolute;inset:0;background:var(--bg);
+  overflow-y:auto;z-index:60;transform:translateX(100%);transition:.25s;}
+.tweet-detail-overlay.open{transform:translateX(0);}
+.detail-topbar{display:flex;align-items:center;gap:16px;padding:14px 16px;
+  border-bottom:1px solid var(--border);}
+.detail-back{background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;}
+.detail-title{font-size:19px;font-weight:800;}
+.reply-compose{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);}
+.reply-input{flex:1;background:none;border:none;color:var(--text);font-size:16px;
+  outline:none;font-family:'Inter',sans-serif;}
+.reply-send{background:var(--blue);border:none;color:#fff;border-radius:30px;
+  padding:7px 16px;font-weight:700;font-size:13px;cursor:pointer;align-self:flex-end;}
+
+/* ── MISC ── */
+.section-head{padding:14px 16px;font-size:19px;font-weight:800;}
+.blue{color:var(--blue);}
+.empty-state{padding:40px;text-align:center;color:var(--muted);font-size:15px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <span>7:56</span>
+  <div class="sb-right">
+    <span>4G</span><span>📶</span><span>🔋75%</span>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar" id="topbar">
+  <div class="avatar-sm" id="drawer-trigger" onclick="openDrawer()">G</div>
+  <div class="logo" style="font-size:28px;">𝕏</div>
+  <button class="upgrade" onclick="showToast('Premium sudah aktif ✓')">Upgrade</button>
+</div>
+
+<!-- FOR YOU / FOLLOWING TABS (home only) -->
+<div class="tab-row" id="home-tabs">
+  <button class="tab-btn active" id="tab-foryou" onclick="switchHomeFeed('foryou')">For you</button>
+  <button class="tab-btn" id="tab-following" onclick="switchHomeFeed('following')">Following</button>
+</div>
+
+<!-- PAGES -->
+<div class="pages" id="pages">
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div id="feed-container"></div>
+  </div>
+  <!-- SEARCH -->
+  <div class="page" id="page-search">
+    <div class="search-wrap">
+      <div class="search-input-row">
+        <span style="font-size:18px;color:var(--muted)">🔍</span>
+        <input type="text" id="search-q" placeholder="Search X" oninput="doSearch()">
+        <button style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer"
+          id="srch-clear" onclick="clearSearch()" style="display:none">✕</button>
+      </div>
+      <div id="search-body"></div>
+    </div>
+  </div>
+  <!-- COMMUNITIES -->
+  <div class="page" id="page-community">
+    <div class="page-header">Communities</div>
+    <div id="community-list"></div>
+  </div>
+  <!-- NOTIFICATIONS -->
+  <div class="page" id="page-notif">
+    <div class="notif-tabs">
+      <button class="notif-tab active" onclick="switchNotifTab('all',this)">All</button>
+      <button class="notif-tab" onclick="switchNotifTab('verified',this)">Verified</button>
+      <button class="notif-tab" onclick="switchNotifTab('mentions',this)">Mentions</button>
+    </div>
+    <div id="notif-list"></div>
+  </div>
+  <!-- CHAT LIST -->
+  <div class="page" id="page-chat">
+    <div class="page-header">Messages</div>
+    <div id="chat-list"></div>
+    <!-- Chat Window -->
+    <div class="chat-window" id="chat-window">
+      <div class="chat-topbar">
+        <button class="chat-back" onclick="closeChat()">←</button>
+        <div class="avatar-sm" id="cw-ava" style="font-size:16px"></div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px" id="cw-name"></div>
+          <div style="font-size:12px;color:var(--muted)">Active now</div>
+        </div>
+        <button style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">ℹ</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Start a new message"
+          onkeydown="if(event.key==='Enter')sendChatMsg()">
+        <button class="chat-send" onclick="sendChatMsg()">➤</button>
+      </div>
+    </div>
+  </div>
+  <!-- BOOKMARKS -->
+  <div class="page" id="page-bookmarks">
+    <div class="page-header">📌 Bookmarks</div>
+    <div id="bookmarks-list"></div>
+  </div>
+  <!-- FOLLOW REQUESTS -->
+  <div class="page" id="page-followreq">
+    <div class="page-header">Follow Requests</div>
+    <div id="followreq-list"></div>
+  </div>
+  <!-- PROFILE -->
+  <div class="page" id="page-profile">
+    <div class="profile-banner"></div>
+    <div class="profile-actions">
+      <button class="btn-edit-profile" onclick="openEditProfile()">Edit profile</button>
+    </div>
+    <div class="profile-info">
+      <div class="profile-name">Gem <span style="color:var(--blue);font-size:18px">✓</span></div>
+      <div class="profile-handle">@milkandk00k1es</div>
+      <div class="profile-bio" id="profile-bio-text">Army forever 💜 | Sharing BTS moments every day</div>
+      <div class="profile-meta">
+        <span>🗓 Joined March 2020</span>
+        <span>📍 Jakarta, Indonesia</span>
+        <span>🔗 <span class="blue">ngl.link/gem</span></span>
+      </div>
+      <div class="profile-stats">
+        <a href="#"><b id="following-count">842</b> <span>Following</span></a>
+        <a href="#"><b id="followers-count">12.4K</b> <span>Followers</span></a>
+      </div>
+    </div>
+    <div class="profile-tabs">
+      <button class="profile-tab active" onclick="switchProfileTab('posts',this)">Posts</button>
+      <button class="profile-tab" onclick="switchProfileTab('replies',this)">Replies</button>
+      <button class="profile-tab" onclick="switchProfileTab('media',this)">Media</button>
+      <button class="profile-tab" onclick="switchProfileTab('likes',this)">Likes</button>
+    </div>
+    <div id="profile-content"></div>
+    <div style="position:relative;height:20px;">
+      <div class="profile-ava-wrap">G</div>
+    </div>
+  </div>
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="page-header">⚙️ Settings</div>
+    <div id="settings-body"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottomnav">
+  <button class="nav-item active" id="nav-home" onclick="switchTab('home')">
+    <span class="nicon">🏠</span>
+  </button>
+  <button class="nav-item" id="nav-search" onclick="switchTab('search')">
+    <span class="nicon">🔍</span>
+  </button>
+  <button class="nav-item" id="nav-community" onclick="switchTab('community')">
+    <span class="nicon">👥</span>
+  </button>
+  <button class="nav-item" id="nav-notif" onclick="switchTab('notif')">
+    <span class="nicon">🔔</span>
+    <span class="nav-notif" id="notif-badge">2</span>
+  </button>
+  <button class="nav-item" id="nav-chat" onclick="switchTab('chat')">
+    <span class="nicon">✉️</span>
+    <span class="nav-notif" id="chat-badge" style="display:none">1</span>
+  </button>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab-btn" onclick="openCompose()">✦</button>
+
+<!-- DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-profile">
+    <div class="avatar-sm" style="width:52px;height:52px;font-size:22px;">G</div>
+    <div class="drawer-name">Gem <span style="color:var(--blue)">✓</span></div>
+    <div class="drawer-handle">@milkandk00k1es</div>
+    <div class="drawer-stats">
+      <a href="#"><b>842</b> <span>Following</span></a>
+      <a href="#"><b>12.4K</b> <span>Followers</span></a>
+    </div>
+  </div>
+  <div class="drawer-item" onclick="gotoPage('profile');closeDrawer()"><span class="drawer-icon">👤</span>Profile</div>
+  <div class="drawer-item" onclick="gotoPage('bookmarks');closeDrawer()"><span class="drawer-icon">🔖</span>Bookmarks</div>
+  <div class="drawer-item" onclick="gotoPage('followreq');closeDrawer()"><span class="drawer-icon">👥</span>Follow requests <span style="background:var(--blue);color:#fff;font-size:11px;border-radius:10px;padding:1px 7px;margin-left:8px;" id="req-badge">3</span></div>
+  <div class="drawer-item" onclick="gotoPage('community');closeDrawer()"><span class="drawer-icon">🌐</span>Communities</div>
+  <div class="drawer-item" onclick="showToast('Premium sudah aktif ✓')"><span class="drawer-icon">⭐</span>Premium</div>
+  <div class="drawer-item" onclick="showToast('Membuka Monetization...')"><span class="drawer-icon">💰</span>Monetization</div>
+  <div class="drawer-divider"></div>
+  <div class="drawer-item" onclick="gotoPage('settings');closeDrawer()"><span class="drawer-icon">⚙️</span>Settings and Support</div>
+  <div class="drawer-sub" onclick="showToast('Help Center dibuka...')">Help Center</div>
+  <div class="drawer-sub" onclick="switchTheme()">🌓 Switch appearance</div>
+</div>
+
+<!-- MODAL (compose / settings sub) -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal-sheet" id="modal-sheet">
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- TWEET DETAIL -->
+<div class="tweet-detail-overlay" id="tweet-detail" style="position:absolute;">
+  <div class="detail-topbar">
+    <button class="detail-back" onclick="closeTweetDetail()">←</button>
+    <div class="detail-title">Post</div>
+  </div>
+  <div id="detail-content"></div>
+  <div class="reply-compose">
+    <div class="avatar-sm">G</div>
+    <input class="reply-input" id="reply-input" placeholder="Post your reply">
+    <button class="reply-send" onclick="postReply()">Reply</button>
+  </div>
+  <div id="detail-replies"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+const ME = {name:'Gem',handle:'milkandk00k1es',ava:'G',verified:true};
+
+let state = {
+  tab:'home', homeFeed:'foryou', notifTab:'all',
+  theme:'dark', profileBio:'Army forever 💜 | Sharing BTS moments every day',
+  bookmarks:[], followReqs:[], likes:[], retweets:[],
+  chatOpen:null, chatHistories:{},
+  toggles:{notifications:true,darkMode:true,dataSaver:false,sensitive:false,autoplay:true},
+  followStates:{},
+  joinedCommunities:{},
+};
+
+const COLORS=['#1d9bf0','#f4212e','#00ba7c','#ffd400','#ff7a00','#8b5cf6','#ec4899'];
+function randColor(){return COLORS[Math.floor(Math.random()*COLORS.length)];}
+
+// ══════════════════════════════════════
+//  FEED DATA
+// ══════════════════════════════════════
+const TWEETS = [
+  {id:1,name:'Gem',handle:'milkandk00k1es',verified:true,ava:'G',color:'#1d9bf0',
+   time:'13h',text:'THAT SMILE.. THAT DAMN SMILE 😭😭😭😭😭😭😭😭😭😭\n@BTS_twt\n#SUGA #BTS_ARiRANG #BTS #BTS_WORLDTOUR_ARIRANG',
+   hasMedia:true,mediaEmoji:'🎵',replies:329,retweets:48400,likes:96800,views:728000},
+  {id:2,name:'BTS SUGA Updates',handle:'SUGA_Updates',verified:true,ava:'S',color:'#ffd400',
+   time:'2h',text:'SUGA has topped the charts again! His solo track is absolutely fire 🔥🔥\n#SUGA #Agust_D',
+   replies:1204,retweets:22100,likes:87600,views:412000},
+  {id:3,name:'K-Pop News',handle:'kpopnews_daily',verified:false,ava:'K',color:'#ec4899',
+   time:'4h',text:'BTS World Tour dates officially announced for 2026! Asia leg starts in Seoul 🇰🇷🎤\n#BTS #WorldTour2026',
+   replies:3209,retweets:91200,likes:215000,views:2100000},
+  {id:4,name:'Tech Daily',handle:'techdailyid',verified:true,ava:'T',color:'#00ba7c',
+   time:'6h',text:'AI tools are reshaping how we work. Here are the top 10 you need to know right now 🧵👇',
+   replies:445,retweets:8900,likes:22300,views:189000},
+  {id:5,name:'Gaming Indonesia',handle:'gamingid',verified:false,ava:'G',color:'#8b5cf6',
+   time:'8h',text:'Mobile Legend World Championship 2026 lineup is insane 🎮🏆 Indonesia represent!!\n#MLWC2026 #esports',
+   replies:892,retweets:14500,likes:45000,views:332000},
+  {id:6,name:'Foodie Jakarta',handle:'foodiejakarta',verified:false,ava:'F',color:'#ff7a00',
+   time:'10h',text:'Tried the new ramen place in Sudirman and WOW 🍜 The broth is so rich. Thread below ↓',
+   replies:287,retweets:1200,likes:9800,views:78000},
+  {id:7,name:'Science Today',handle:'sciencetoday',verified:true,ava:'S',color:'#1d9bf0',
+   time:'12h',text:'Scientists have discovered a new exoplanet that could potentially support life 🌍✨\n#Space #Science #Astronomy',
+   replies:560,retweets:31000,likes:74000,views:890000},
+];
+
+const FOLLOWING_TWEETS = TWEETS.filter(t=>[1,2,4].includes(t.id));
+
+const NOTIFICATIONS = [
+  {id:1,type:'like',icon:'❤️',text:'<b>SUGA_Updates</b> and <b>12 others</b> liked your post',time:'2m',unread:true},
+  {id:2,type:'retweet',icon:'🔁',text:'<b>kpopnews_daily</b> reposted your post: "THAT SMILE..."',time:'15m',unread:true},
+  {id:3,type:'follow',icon:'👤',text:'<b>BTS_twt</b> followed you',time:'1h',unread:false},
+  {id:4,type:'mention',icon:'💬',text:'<b>armyworldwide</b> mentioned you in a post',time:'3h',unread:false},
+  {id:5,type:'like',icon:'❤️',text:'<b>techdailyid</b> liked your reply',time:'5h',unread:false},
+  {id:6,type:'verify',icon:'✓',text:'Your account has been verified! Premium features unlocked',time:'1d',unread:false},
+];
+
+const FOLLOW_REQS = [
+  {id:1,name:'Jimin Fan Club',handle:'jiminfc_id',bio:'Dedicated to Park Jimin 💜',ava:'J',color:'#ec4899'},
+  {id:2,name:'BTS Indonesia',handle:'bts_indonesia',bio:'Official BTS Indonesia fan page',ava:'B',color:'#1d9bf0'},
+  {id:3,name:'K-Pop Charts',handle:'kpopcharts',bio:'Daily kpop chart updates 📊',ava:'K',color:'#ffd400'},
+];
+
+const COMMUNITIES = [
+  {id:1,name:'BTS Army',emoji:'💜',members:'2.3M',posts:'14.2K/day',joined:false},
+  {id:2,name:'K-Pop Fans Indonesia',emoji:'🇮🇩',members:'891K',posts:'8.1K/day',joined:false},
+  {id:3,name:'Tech & AI',emoji:'🤖',members:'1.4M',posts:'22K/day',joined:true},
+  {id:4,name:'Anime & Manga',emoji:'🎌',members:'3.1M',posts:'31K/day',joined:false},
+  {id:5,name:'Foodies Jakarta',emoji:'🍜',members:'420K',posts:'5.4K/day',joined:false},
+  {id:6,name:'Gaming Indonesia',emoji:'🎮',members:'760K',posts:'9.9K/day',joined:true},
+];
+
+const CHATS = [
+  {id:1,name:'SUGA_Updates',ava:'S',color:'#ffd400',preview:'Omg did you watch it?',time:'2m',unread:true},
+  {id:2,name:'kpopnews_daily',ava:'K',color:'#ec4899',preview:'Thanks for the RT! 💜',time:'1h',unread:false},
+  {id:3,name:'techdailyid',ava:'T',color:'#00ba7c',preview:'Check this thread 👇',time:'3h',unread:false},
+  {id:4,name:'armyworldwide',ava:'A',color:'#8b5cf6',preview:'Are you going to the concert?',time:'1d',unread:true},
+];
+
+const CHAT_MESSAGES = {
+  1:[
+    {from:'them',text:'Hey! Did you see SUGA\'s new stage??',time:'10:12'},
+    {from:'me',text:'YES OMG I\'m literally crying 😭💜',time:'10:13'},
+    {from:'them',text:'The smile at the end killed me 🔥🔥',time:'10:14'},
+    {from:'me',text:'THAT DAMN SMILE 😭😭😭',time:'10:15'},
+    {from:'them',text:'Omg did you watch it?',time:'10:16'},
+  ],
+  2:[{from:'them',text:'Thanks for the RT! 💜',time:'9:00'}],
+  3:[{from:'them',text:'Check this thread 👇',time:'7:30'}],
+  4:[{from:'them',text:'Are you going to the concert?',time:'Yesterday'}],
+};
+
+const TRENDS = [
+  {cat:'Trending in Indonesia',name:'#BTS_ARIRANG',count:'48.4K posts'},
+  {cat:'Music · Trending',name:'#SUGA',count:'96.8K posts'},
+  {cat:'Trending',name:'#BTS_WORLDTOUR',count:'215K posts'},
+  {cat:'K-Pop · Trending',name:'Park Jimin',count:'31K posts'},
+  {cat:'Technology',name:'AI 2026',count:'88K posts'},
+  {cat:'Trending in Indonesia',name:'Jakarta',count:'12K posts'},
+];
+
+const WHO_TO_FOLLOW = [
+  {name:'BTS Official',handle:'BTS_twt',bio:'Official BTS account 💜',ava:'B',color:'#8b5cf6',verified:true},
+  {name:'HYBE Labels',handle:'HYBE_LABELS',bio:'Home of BTS, TXT, SEVENTEEN',ava:'H',color:'#1d9bf0',verified:true},
+  {name:'Weverse',handle:'weverse',bio:'Connect with your favorite artists',ava:'W',color:'#00ba7c',verified:true},
+];
+
+// ══════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════
+function fmtNum(n){
+  if(n>=1000000) return (n/1000000).toFixed(1)+'M';
+  if(n>=1000) return (n/1000).toFixed(1)+'K';
+  return n;
+}
+function parseTweetText(text){
+  return text
+    .replace(/(#\w+)/g,'<span class="hashtag">$1</span>')
+    .replace(/(@\w+)/g,'<span class="mention">$1</span>')
+    .replace(/\n/g,'<br>');
+}
+function renderTweet(t,mini=false){
+  const liked = state.likes.includes(t.id);
+  const rted = state.retweets.includes(t.id);
+  const bookmarked = state.bookmarks.find(b=>b.id===t.id);
+  return `
+  <div class="tweet" onclick="openTweet(${t.id})">
+    <div class="tweet-ava" style="background:${t.color}">${t.ava}</div>
+    <div class="tweet-body">
+      <div class="tweet-header">
+        <span class="tweet-name">${t.name}</span>
+        ${t.verified?'<span class="tweet-verified">✓</span>':''}
+        <span class="tweet-handle">@${t.handle}</span>
+        <span class="tweet-dot">·</span>
+        <span class="tweet-time">${t.time}</span>
+        <button class="tweet-more" onclick="event.stopPropagation();tweetMenu(${t.id})">···</button>
+      </div>
+      <div class="tweet-text">${parseTweetText(t.text)}</div>
+      ${t.hasMedia?`<div class="tweet-media" onclick="event.stopPropagation()">
+        <div style="font-size:60px;opacity:.3">${t.mediaEmoji||'🖼'}</div>
+        <div class="play-btn" style="position:absolute">▶</div>
+        <div style="position:absolute;bottom:8px;left:10px;font-size:12px;background:rgba(0,0,0,.7);padding:2px 6px;border-radius:4px">0:04</div>
+      </div>`:''}
+      <div class="tweet-actions" onclick="event.stopPropagation()">
+        <button class="tact reply" onclick="openTweet(${t.id})">
+          <span class="tact-icon">💬</span>${fmtNum(t.replies)}
+        </button>
+        <button class="tact retweet ${rted?'retweeted':''}" onclick="doRetweet(${t.id},event)">
+          <span class="tact-icon">🔁</span><span id="rt-${t.id}">${fmtNum(t.retweets+(rted?1:0))}</span>
+        </button>
+        <button class="tact like ${liked?'liked':''}" onclick="doLike(${t.id},event)">
+          <span class="tact-icon">${liked?'❤️':'🤍'}</span><span id="lk-${t.id}">${fmtNum(t.likes+(liked?1:0))}</span>
+        </button>
+        <button class="tact views">
+          <span class="tact-icon">📊</span>${fmtNum(t.views)}
+        </button>
+        <button class="tact" onclick="doBookmark(${t.id},event)" title="Bookmark">
+          <span class="tact-icon">${bookmarked?'🔖':'🏷'}</span>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderFeed(){
+  const tweets = state.homeFeed==='foryou'?TWEETS:FOLLOWING_TWEETS;
+  document.getElementById('feed-container').innerHTML =
+    tweets.map(t=>renderTweet(t)).join('');
+}
+
+function renderSearch(){
+  const q = document.getElementById('search-q').value.trim().toLowerCase();
+  const el = document.getElementById('search-body');
+  if(!q){
+    el.innerHTML = `
+      <div style="padding:14px 16px;font-size:17px;font-weight:800;">Trends for you</div>
+      ${TRENDS.map(tr=>`
+        <div class="trend-card" onclick="searchFor('${tr.name}')">
+          <div class="trend-cat">${tr.cat}</div>
+          <div class="trend-name">${tr.name}</div>
+          <div class="trend-count">${tr.count}</div>
+        </div>`).join('')}
+      <div style="padding:14px 16px;font-size:17px;font-weight:800;border-top:1px solid var(--border)">Who to follow</div>
+      ${WHO_TO_FOLLOW.map(u=>whoCard(u)).join('')}
+    `;
+  } else {
+    const found = TWEETS.filter(t=>
+      t.text.toLowerCase().includes(q)||t.name.toLowerCase().includes(q)||t.handle.includes(q));
+    const users = WHO_TO_FOLLOW.filter(u=>u.name.toLowerCase().includes(q)||u.handle.includes(q));
+    el.innerHTML = `
+      <div style="padding:10px 16px;font-size:14px;color:var(--muted)">Results for "<b style="color:var(--text)">${q}</b>"</div>
+      ${users.length?`<div style="padding:8px 16px;font-weight:700">Accounts</div>${users.map(u=>whoCard(u)).join('')}`:''}
+      ${found.length?`<div style="padding:8px 16px;font-weight:700">Posts</div>${found.map(t=>renderTweet(t)).join('')}`:''}
+      ${!found.length&&!users.length?`<div class="empty-state">No results for "${q}"</div>`:''}
+    `;
+  }
+}
+function searchFor(q){ document.getElementById('search-q').value=q; doSearch(); }
+function doSearch(){
+  const q = document.getElementById('search-q');
+  document.getElementById('srch-clear').style.display = q.value?'block':'none';
+  renderSearch();
+}
+function clearSearch(){ document.getElementById('search-q').value=''; renderSearch(); }
+
+function whoCard(u){
+  const following = state.followStates[u.handle];
+  return `<div class="who-card">
+    <div class="tweet-ava" style="background:${u.color};width:44px;height:44px;border-radius:50%;flex-shrink:0">${u.ava}</div>
+    <div class="who-info">
+      <div class="who-name">${u.name}${u.verified?' <span style="color:var(--blue)">✓</span>':''}</div>
+      <div class="who-handle">@${u.handle}</div>
+      <div class="who-bio">${u.bio}</div>
+    </div>
+    ${following
+      ?`<button class="btn-following" onclick="unfollow('${u.handle}',event)">Following</button>`
+      :`<button class="btn-follow" onclick="followUser('${u.handle}',event)">Follow</button>`
+    }
+  </div>`;
+}
+function followUser(handle,e){ e?.stopPropagation(); state.followStates[handle]=true; renderSearch(); showToast(`You followed @${handle}`); }
+function unfollow(handle,e){ e?.stopPropagation(); state.followStates[handle]=false; renderSearch(); showToast(`Unfollowed @${handle}`); }
+
+function renderNotifs(){
+  const list = document.getElementById('notif-list');
+  const filter = state.notifTab;
+  let notifs = NOTIFICATIONS;
+  if(filter==='mentions') notifs = NOTIFICATIONS.filter(n=>n.type==='mention');
+  if(filter==='verified') notifs = NOTIFICATIONS.filter(n=>n.type==='verify'||n.type==='like');
+  list.innerHTML = notifs.map(n=>`
+    <div class="notif-item ${n.unread?'notif-unread':''}" onclick="markNotifRead(${n.id})">
+      <div class="notif-icon">${n.icon}</div>
+      <div>
+        <div class="notif-text">${n.text}</div>
+        <div class="notif-time">${n.time}</div>
+      </div>
+    </div>`).join('');
+  const unread = NOTIFICATIONS.filter(n=>n.unread).length;
+  const b = document.getElementById('notif-badge');
+  b.textContent=unread; b.style.display=unread?'block':'none';
+}
+function markNotifRead(id){
+  const n=NOTIFICATIONS.find(x=>x.id===id);
+  if(n){n.unread=false;renderNotifs();}
+}
+function switchNotifTab(tab,el){
+  state.notifTab=tab;
+  document.querySelectorAll('.notif-tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderNotifs();
+}
+
+function renderChatList(){
+  document.getElementById('chat-list').innerHTML = CHATS.map(c=>`
+    <div class="chat-list-item" onclick="openChat(${c.id})">
+      <div class="tweet-ava" style="background:${c.color};width:44px;height:44px;border-radius:50%">${c.ava}</div>
+      <div class="chat-meta">
+        <div class="chat-name-row">
+          <span class="chat-name">${c.name}</span>
+          <span class="chat-time">${c.time}</span>
+        </div>
+        <div class="chat-preview">${c.preview}</div>
+      </div>
+      ${c.unread?'<div class="chat-unread-dot"></div>':''}
+    </div>`).join('');
+  const unread=CHATS.filter(c=>c.unread).length;
+  const b=document.getElementById('chat-badge');
+  if(b){b.textContent=unread;b.style.display=unread?'block':'none';}
+}
+function openChat(id){
+  state.chatOpen=id;
+  const c=CHATS.find(x=>x.id===id);
+  c.unread=false; renderChatList();
+  document.getElementById('cw-name').textContent=c.name;
+  document.getElementById('cw-ava').textContent=c.ava;
+  document.getElementById('cw-ava').style.background=c.color;
+  state.chatHistories[id] = state.chatHistories[id]||[...(CHAT_MESSAGES[id]||[])];
+  renderChatMessages(id);
+  document.getElementById('chat-window').classList.add('open');
+}
+function renderChatMessages(id){
+  const msgs = state.chatHistories[id]||[];
+  document.getElementById('chat-messages').innerHTML = msgs.map(m=>`
+    <div>
+      <div class="bubble ${m.from==='me'?'mine':'theirs'}">${m.text}</div>
+      <div class="bubble-time" style="text-align:${m.from==='me'?'right':'left'}">${m.time}</div>
+    </div>`).join('');
+  setTimeout(()=>{
+    const el=document.getElementById('chat-messages');
+    el.scrollTop=el.scrollHeight;
+  },50);
+}
+function sendChatMsg(){
+  const inp=document.getElementById('chat-input');
+  const txt=inp.value.trim();
+  if(!txt||!state.chatOpen)return;
+  const now=new Date();
+  const time=`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+  if(!state.chatHistories[state.chatOpen]) state.chatHistories[state.chatOpen]=[];
+  state.chatHistories[state.chatOpen].push({from:'me',text:txt,time});
+  inp.value='';
+  renderChatMessages(state.chatOpen);
+  // auto reply after 1.5s
+  setTimeout(()=>{
+    const replies=['💜','LOL that\'s so true!','OMG YES!!','Same tbh 😭','HAHA exactly','Agree 100%'];
+    const r=replies[Math.floor(Math.random()*replies.length)];
+    state.chatHistories[state.chatOpen].push({from:'them',text:r,time:time});
+    renderChatMessages(state.chatOpen);
+  },1500);
+}
+function closeChat(){ document.getElementById('chat-window').classList.remove('open'); state.chatOpen=null; }
+
+function renderBookmarks(){
+  const el=document.getElementById('bookmarks-list');
+  if(!state.bookmarks.length){
+    el.innerHTML='<div class="empty-state">📌 No bookmarks yet.<br><span style="font-size:13px">Tap the bookmark icon on any post.</span></div>';
+    return;
+  }
+  el.innerHTML=state.bookmarks.map(t=>renderTweet(t)).join('');
+}
+
+function renderFollowReqs(){
+  const el=document.getElementById('followreq-list');
+  if(!FOLLOW_REQS.length){ el.innerHTML='<div class="empty-state">No follow requests</div>'; return; }
+  el.innerHTML=FOLLOW_REQS.map(r=>`
+    <div class="req-item" id="req-${r.id}">
+      <div class="tweet-ava" style="background:${r.color};width:44px;height:44px;border-radius:50%;flex-shrink:0">${r.ava}</div>
+      <div style="flex:1">
+        <div style="font-weight:700">${r.name} <span style="font-weight:400;color:var(--muted)">@${r.handle}</span></div>
+        <div style="font-size:13px;color:var(--muted)">${r.bio}</div>
+        <div class="req-btns">
+          <button class="btn-accept" onclick="acceptReq(${r.id})">Accept</button>
+          <button class="btn-decline" onclick="declineReq(${r.id})">Decline</button>
+        </div>
+      </div>
+    </div>`).join('');
+  const b=document.getElementById('req-badge');
+  if(b) b.textContent=FOLLOW_REQS.length;
+}
+function acceptReq(id){
+  const el=document.getElementById(`req-${id}`);
+  if(el){el.style.opacity='.4';el.innerHTML+='<div style="color:var(--green);font-size:13px;padding-left:56px;padding-bottom:8px">✓ Accepted</div>';}
+  showToast('Follow request accepted ✓');
+  const b=document.getElementById('req-badge');
+  const rem=FOLLOW_REQS.filter(r=>r.id!==id).length;
+  if(b) b.textContent=rem;
+}
+function declineReq(id){
+  const el=document.getElementById(`req-${id}`);
+  if(el) el.remove();
+  showToast('Request declined');
+}
+
+function renderProfile(){
+  document.getElementById('profile-bio-text').textContent=state.profileBio;
+  renderProfileFeed('posts');
+}
+function renderProfileFeed(type){
+  const el=document.getElementById('profile-content');
+  if(type==='posts') el.innerHTML=TWEETS.filter(t=>t.handle===ME.handle).map(t=>renderTweet(t)).join('')||'<div class="empty-state">No posts yet</div>';
+  else if(type==='likes') el.innerHTML=(state.likes.length?TWEETS.filter(t=>state.likes.includes(t.id)).map(t=>renderTweet(t)).join(''):'<div class="empty-state">No likes yet</div>');
+  else if(type==='media') el.innerHTML=TWEETS.filter(t=>t.hasMedia).map(t=>renderTweet(t)).join('')||'<div class="empty-state">No media</div>';
+  else el.innerHTML='<div class="empty-state">No replies yet</div>';
+}
+function switchProfileTab(type,el){
+  document.querySelectorAll('.profile-tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderProfileFeed(type);
+}
+
+function renderCommunities(){
+  document.getElementById('community-list').innerHTML=COMMUNITIES.map(c=>`
+    <div class="comm-card">
+      <div class="comm-banner" style="background:rgba(255,255,255,.05)">${c.emoji}</div>
+      <div class="comm-info">
+        <div class="comm-name">${c.name}</div>
+        <div class="comm-meta">${c.members} members · ${c.posts}</div>
+      </div>
+      <button class="btn-join ${state.joinedCommunities[c.id]?'btn-following':''}"
+        onclick="toggleCommunity(${c.id},event)">
+        ${state.joinedCommunities[c.id]?'Joined':'Join'}
+      </button>
+    </div>`).join('');
+}
+function toggleCommunity(id,e){
+  e.stopPropagation();
+  state.joinedCommunities[id]=!state.joinedCommunities[id];
+  renderCommunities();
+  showToast(state.joinedCommunities[id]?'Joined community! 🎉':'Left community');
+}
+
+function renderSettings(){
+  const T=state.toggles;
+  const sections=[
+    {title:'Account',items:[
+      {icon:'👤',label:'Your account',sub:'Account info, deactivation'},
+      {icon:'🔒',label:'Security and account access',sub:'Password, 2FA, login history'},
+      {icon:'💳',label:'Monetization',sub:'Premium & revenue'},
+    ]},
+    {title:'Preferences',items:[
+      {icon:'🔔',label:'Notifications',toggle:'notifications'},
+      {icon:'🌙',label:'Dark mode',toggle:'darkMode'},
+      {icon:'📡',label:'Data saver',toggle:'dataSaver'},
+      {icon:'⚠️',label:'Sensitive content',toggle:'sensitive'},
+      {icon:'▶️',label:'Autoplay videos',toggle:'autoplay'},
+    ]},
+    {title:'Support',items:[
+      {icon:'❓',label:'Help Center',sub:'FAQ & guides'},
+      {icon:'📋',label:'Privacy Policy',sub:''},
+      {icon:'📄',label:'Terms of Service',sub:''},
+      {icon:'🚪',label:'Log out',sub:'@milkandk00k1es',danger:true},
+    ]},
+  ];
+  document.getElementById('settings-body').innerHTML=sections.map(s=>`
+    <div class="settings-section">${s.title}</div>
+    ${s.items.map(item=>item.toggle?`
+      <div class="settings-item" onclick="toggleSetting('${item.toggle}')">
+        <div class="settings-icon">${item.icon}</div>
+        <div class="settings-text"><div class="settings-label">${item.label}</div></div>
+        <div class="toggle ${T[item.toggle]?'on':''}" id="tog-${item.toggle}"></div>
+      </div>`:`
+      <div class="settings-item ${item.danger?'style="color:var(--red)"':''}" onclick="${item.danger?`confirmLogout()`:`showToast('Opening ${item.label}...')`}">
+        <div class="settings-icon">${item.icon}</div>
+        <div class="settings-text">
+          <div class="settings-label" ${item.danger?`style="color:var(--red)"`:``}>${item.label}</div>
+          ${item.sub?`<div class="settings-sub">${item.sub}</div>`:''}
+        </div>
+        <div class="settings-arrow">›</div>
+      </div>`
+    ).join('')}
+  `).join('');
+}
+function toggleSetting(key){
+  state.toggles[key]=!state.toggles[key];
+  const tog=document.getElementById('tog-'+key);
+  if(tog) tog.classList.toggle('on',state.toggles[key]);
+  showToast(key+': '+(state.toggles[key]?'ON':'OFF'));
+}
+function confirmLogout(){
+  openModal(`
+    <div class="modal-handle"></div>
+    <div class="modal-body">
+      <div class="modal-title">Log out of X?</div>
+      <p style="color:var(--muted);font-size:15px;margin-bottom:24px">You can always log back in at any time.</p>
+      <button class="btn-tweet" style="width:100%;margin-bottom:10px;background:var(--red)" onclick="showToast('Logged out (demo only)');closeModal()">Log out</button>
+      <button class="btn-following" style="width:100%;padding:12px" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+
+// ══════════════════════════════════════
+//  ACTIONS
+// ══════════════════════════════════════
+function doLike(id,e){
+  e.stopPropagation();
+  const t=TWEETS.find(x=>x.id===id);
+  if(!t)return;
+  if(state.likes.includes(id)){
+    state.likes=state.likes.filter(x=>x!==id);
+  } else {
+    state.likes.push(id);
+  }
+  renderFeed();
+  if(state.tab==='profile') renderProfileFeed('likes');
+}
+function doRetweet(id,e){
+  e.stopPropagation();
+  if(state.retweets.includes(id)){
+    state.retweets=state.retweets.filter(x=>x!==id);
+    showToast('Repost removed');
+  } else {
+    state.retweets.push(id);
+    showToast('Reposted ✓');
+  }
+  renderFeed();
+}
+function doBookmark(id,e){
+  e.stopPropagation();
+  const t=TWEETS.find(x=>x.id===id);
+  if(!t)return;
+  if(state.bookmarks.find(b=>b.id===id)){
+    state.bookmarks=state.bookmarks.filter(b=>b.id!==id);
+    showToast('Removed from Bookmarks');
+  } else {
+    state.bookmarks.push(t);
+    showToast('Added to Bookmarks 🔖');
+  }
+  renderFeed();
+  renderBookmarks();
+}
+function tweetMenu(id){
+  const t=TWEETS.find(x=>x.id===id);
+  openModal(`
+    <div class="modal-handle"></div>
+    <div class="modal-body" style="padding-bottom:24px">
+      ${[
+        {icon:'🔖',label:'Bookmark post',action:`doBookmark(${id},event);closeModal()`},
+        {icon:'🔗',label:'Copy link to post',action:`showToast('Link copied!');closeModal()`},
+        {icon:'🚫',label:`Not interested in @${t?.handle}`,action:`showToast('Got it, we\'ll show less of this');closeModal()`},
+        {icon:'🔇',label:`Mute @${t?.handle}`,action:`showToast('@${t?.handle} muted');closeModal()`},
+        {icon:'⛔',label:`Block @${t?.handle}`,action:`showToast('@${t?.handle} blocked');closeModal()`},
+        {icon:'🚩',label:'Report post',action:`showToast('Report submitted');closeModal()`},
+      ].map(i=>`
+        <div class="settings-item" onclick="${i.action}">
+          <div style="font-size:22px;width:28px">${i.icon}</div>
+          <div style="font-size:16px;font-weight:500">${i.label}</div>
+        </div>`).join('')}
+    </div>`);
+}
+
+function openTweet(id){
+  const t=TWEETS.find(x=>x.id===id);
+  if(!t)return;
+  const detail=document.getElementById('tweet-detail');
+  document.getElementById('detail-content').innerHTML=`
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+        <div class="tweet-ava" style="background:${t.color}">${t.ava}</div>
+        <div>
+          <div style="font-weight:700">${t.name} ${t.verified?'<span style="color:var(--blue)">✓</span>':''}</div>
+          <div style="color:var(--muted);font-size:14px">@${t.handle}</div>
+        </div>
+        <button class="btn-follow" style="margin-left:auto;font-size:13px" onclick="showToast('Following @${t.handle}')">Follow</button>
+      </div>
+      <div style="font-size:17px;line-height:1.6;margin-bottom:14px">${parseTweetText(t.text)}</div>
+      ${t.hasMedia?`<div class="tweet-media" style="margin-bottom:14px"><div style="font-size:60px;opacity:.3">${t.mediaEmoji||'🖼'}</div><div class="play-btn" style="position:absolute">▶</div></div>`:''}
+      <div style="font-size:14px;color:var(--muted);margin-bottom:14px">${t.time} · <span style="color:var(--text)">${fmtNum(t.views)}</span> Views</div>
+      <div style="display:flex;gap:20px;font-size:14px;padding:12px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <span><b>${fmtNum(t.retweets)}</b> <span style="color:var(--muted)">Reposts</span></span>
+        <span><b>${fmtNum(t.likes)}</b> <span style="color:var(--muted)">Likes</span></span>
+        <span><b>${fmtNum(t.views)}</b> <span style="color:var(--muted)">Views</span></span>
+      </div>
+      <div class="tweet-actions" style="padding:8px 0" onclick="event.stopPropagation()">
+        <button class="tact reply"><span class="tact-icon">💬</span></button>
+        <button class="tact retweet ${state.retweets.includes(id)?'retweeted':''}" onclick="doRetweet(${id},event)"><span class="tact-icon">🔁</span></button>
+        <button class="tact like ${state.likes.includes(id)?'liked':''}" onclick="doLike(${id},event)"><span class="tact-icon">${state.likes.includes(id)?'❤️':'🤍'}</span></button>
+        <button class="tact views"><span class="tact-icon">📊</span></button>
+        <button class="tact" onclick="doBookmark(${id},event)"><span class="tact-icon">${state.bookmarks.find(b=>b.id===id)?'🔖':'🏷'}</span></button>
+      </div>
+    </div>`;
+  // Fake replies
+  document.getElementById('detail-replies').innerHTML=[
+    {name:'ARMY Worldwide',handle:'armyworldwide',ava:'A',color:'#8b5cf6',text:'THIS IS EVERYTHING 😭💜💜',time:'12h'},
+    {name:'K-Pop Fan',handle:'kpopfan2',ava:'K',color:'#ec4899',text:'I can\'t handle this 😭😭😭',time:'11h'},
+    {name:'Jimin Updates',handle:'jiminupdates',ava:'J',color:'#ffd400',text:'The way he smiles 🥹',time:'10h'},
+  ].map(r=>`
+    <div class="tweet">
+      <div class="tweet-ava" style="background:${r.color}">${r.ava}</div>
+      <div class="tweet-body">
+        <div class="tweet-header">
+          <span class="tweet-name">${r.name}</span>
+          <span class="tweet-handle">@${r.handle}</span>
+          <span class="tweet-dot">·</span>
+          <span class="tweet-time">${r.time}</span>
+        </div>
+        <div class="tweet-text">${r.text}</div>
+      </div>
+    </div>`).join('');
+  detail.classList.add('open');
+}
+function closeTweetDetail(){ document.getElementById('tweet-detail').classList.remove('open'); }
+
+function postReply(){
+  const txt=document.getElementById('reply-input').value.trim();
+  if(!txt)return;
+  document.getElementById('reply-input').value='';
+  showToast('Reply posted! ✓');
+  document.getElementById('detail-replies').insertAdjacentHTML('afterbegin',`
+    <div class="tweet">
+      <div class="tweet-ava" style="background:var(--blue)">G</div>
+      <div class="tweet-body">
+        <div class="tweet-header">
+          <span class="tweet-name">Gem</span>
+          <span class="tweet-verified">✓</span>
+          <span class="tweet-handle">@milkandk00k1es</span>
+          <span class="tweet-dot">·</span>
+          <span class="tweet-time">Just now</span>
+        </div>
+        <div class="tweet-text">${txt}</div>
+      </div>
+    </div>`);
+}
+
+// ══════════════════════════════════════
+//  COMPOSE
+// ══════════════════════════════════════
+function openCompose(){
+  openModal(`
+    <div class="compose-header">
+      <button style="background:none;border:none;color:var(--blue);font-size:15px;font-weight:700;cursor:pointer" onclick="closeModal()">Cancel</button>
+      <button class="btn-tweet" id="post-btn" disabled onclick="postTweet()">Post</button>
+    </div>
+    <div class="compose-area">
+      <div class="avatar-sm" style="width:40px;height:40px;flex-shrink:0">G</div>
+      <textarea class="compose-input" id="compose-text" placeholder="What is happening?!"
+        oninput="composeChange()" rows="4"></textarea>
+    </div>
+    <div class="compose-toolbar">
+      <button class="compose-tool" onclick="showToast('Image picker (demo)')">🖼</button>
+      <button class="compose-tool" onclick="showToast('GIF picker (demo)')">GIF</button>
+      <button class="compose-tool" onclick="showToast('Poll creator (demo)')">📊</button>
+      <button class="compose-tool" onclick="showToast('Emoji picker (demo)')">😊</button>
+      <button class="compose-tool" onclick="showToast('Location (demo)')">📍</button>
+      <span class="compose-counter" id="compose-counter">280</span>
+    </div>`);
+  setTimeout(()=>document.getElementById('compose-text')?.focus(),300);
+}
+function composeChange(){
+  const txt=document.getElementById('compose-text')?.value||'';
+  const remaining=280-txt.length;
+  const counter=document.getElementById('compose-counter');
+  const btn=document.getElementById('post-btn');
+  if(counter) counter.textContent=remaining;
+  if(counter) counter.style.color=remaining<20?'var(--red)':remaining<50?'var(--yellow)':'var(--muted)';
+  if(btn) btn.disabled=!txt.trim()||remaining<0;
+}
+function postTweet(){
+  const txt=document.getElementById('compose-text')?.value?.trim();
+  if(!txt)return;
+  const newTweet={
+    id:Date.now(),name:ME.name,handle:ME.handle,verified:ME.verified,
+    ava:ME.ava,color:'#1d9bf0',
+    time:'Just now',text:txt,
+    replies:0,retweets:0,likes:0,views:0
+  };
+  TWEETS.unshift(newTweet);
+  closeModal();
+  renderFeed();
+  showToast('Post published! 🎉');
+}
+
+// ══════════════════════════════════════
+//  EDIT PROFILE
+// ══════════════════════════════════════
+function openEditProfile(){
+  openModal(`
+    <div class="modal-handle"></div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <button style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer" onclick="closeModal()">✕</button>
+        <div style="font-size:18px;font-weight:800">Edit profile</div>
+        <button class="btn-tweet" onclick="saveProfile()">Save</button>
+      </div>
+      <div style="height:80px;background:linear-gradient(135deg,#1d9bf0,#8b5cf6);border-radius:12px;margin-bottom:14px"></div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Name</label>
+        <input id="edit-name" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:15px;outline:none;font-family:Inter,sans-serif" value="Gem">
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Bio</label>
+        <textarea id="edit-bio" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:15px;outline:none;resize:none;font-family:Inter,sans-serif" rows="3">${state.profileBio}</textarea>
+      </div>
+      <div>
+        <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">Location</label>
+        <input id="edit-loc" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:15px;outline:none;font-family:Inter,sans-serif" value="Jakarta, Indonesia">
+      </div>
+    </div>`);
+}
+function saveProfile(){
+  const bio=document.getElementById('edit-bio')?.value?.trim();
+  if(bio) state.profileBio=bio;
+  closeModal();
+  renderProfile();
+  showToast('Profile updated ✓');
+}
+
+// ══════════════════════════════════════
+//  TAB / NAV
+// ══════════════════════════════════════
+function switchTab(tab){
+  state.tab=tab;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.getElementById('nav-'+tab)?.classList.add('active');
+  // show/hide header elements
+  document.getElementById('home-tabs').style.display=tab==='home'?'flex':'none';
+  document.getElementById('topbar').style.display=
+    ['home','search'].includes(tab)?'flex':'none';
+  document.getElementById('fab-btn').style.display=
+    ['home','profile'].includes(tab)?'flex':'none';
+  if(tab==='search') renderSearch();
+  if(tab==='notif') renderNotifs();
+  if(tab==='chat') renderChatList();
+  if(tab==='community') renderCommunities();
+  if(tab==='bookmarks') renderBookmarks();
+  if(tab==='followreq') renderFollowReqs();
+  if(tab==='profile') renderProfile();
+  if(tab==='settings') renderSettings();
+}
+
+function gotoPage(page){
+  // Add a fake nav item if needed
+  switchTab(page);
+}
+
+function switchHomeFeed(feed){
+  state.homeFeed=feed;
+  document.getElementById('tab-foryou').classList.toggle('active',feed==='foryou');
+  document.getElementById('tab-following').classList.toggle('active',feed==='following');
+  renderFeed();
+}
+
+// ══════════════════════════════════════
+//  DRAWER
+// ══════════════════════════════════════
+function openDrawer(){
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+}
+
+// ══════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════
+function openModal(html){
+  document.getElementById('modal-content').innerHTML=html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('modal-overlay'))return;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+// ══════════════════════════════════════
+//  THEME
+// ══════════════════════════════════════
+function switchTheme(){
+  if(document.documentElement.style.getPropertyValue('--bg')==='#ffffff'){
+    document.documentElement.style.setProperty('--bg','#000');
+    document.documentElement.style.setProperty('--surface','#0f0f0f');
+    document.documentElement.style.setProperty('--text','#e7e9ea');
+    showToast('Dark mode on 🌙');
+  } else {
+    document.documentElement.style.setProperty('--bg','#ffffff');
+    document.documentElement.style.setProperty('--surface','#f7f9f9');
+    document.documentElement.style.setProperty('--text','#0f1419');
+    document.documentElement.style.setProperty('--border','#eff3f4');
+    showToast('Light mode on ☀️');
+  }
+  closeDrawer();
+}
+
+// ══════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════
+let toastT;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ══════════════════════════════════════
+//  CLOCK
+// ══════════════════════════════════════
+function updateClock(){
+  const now=new Date();
+  document.querySelector('.statusbar span').textContent=
+    `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+setInterval(updateClock,10000);
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+renderFeed();
+renderSearch();
+renderNotifs();
+renderChatList();
+renderCommunities();
+renderBookmarks();
+renderFollowReqs();
+renderProfile();
+renderSettings();
+</script>
+</body>
+</html>
